@@ -74,8 +74,10 @@ async def test_create_dispatch_pr_new_repo():
 
 @pytest.mark.asyncio
 async def test_create_dispatch_pr_commits_rendered_template():
-    """The committed file must contain APP_NAME and AICLI_REPO substitutions."""
+    """The committed file must contain APP_NAME, AICLI_REPO, AIBOT_URL substitutions
+    and forward AI_CLI_APP_TOKEN to reusable workflows as AIBOT_API_KEY."""
     from aibot.github.workflow import create_dispatch_pr
+    from tests.conftest import FAKE_PUBLIC_URL
 
     async with respx.mock as mock:
         _mock_github_pr_flow(mock, "user/myrepo")
@@ -86,6 +88,10 @@ async def test_create_dispatch_pr_commits_rendered_template():
     committed = base64.b64decode(body["content"]).decode()
     assert FAKE_APP_NAME in committed
     assert FAKE_AICLI_REPO in committed
+    assert FAKE_PUBLIC_URL in committed
+    assert "AIBOT_API_KEY: ${{ secrets.AI_CLI_APP_TOKEN }}" in committed
+    # get-token job removed — reusable workflow fetches its own token.
+    assert "get-token:" not in committed
 
 
 @pytest.mark.asyncio
