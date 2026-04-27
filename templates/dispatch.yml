@@ -118,6 +118,8 @@ jobs:
       rules:      ${{ vars.AI_CLI_RULES || 'code-inspection-common' }}
       pr_number:  ${{ fromJSON(needs.route.outputs.pr_number) }}
       app_name:   ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
+      aicli_repo: '{{AICLI_REPO}}'
+      aicli_ref:  main
     secrets:
       AI_API_KEY: ${{ secrets.AI_CLI_API_KEY }}
       APP_TOKEN:  ${{ needs.get-token.outputs.app_token }}
@@ -128,9 +130,11 @@ jobs:
     if: needs.route.outputs.route_type == 'mention'
     uses: {{AICLI_REPO}}/.github/workflows/ai-command.yml@main
     with:
-      command:   ${{ needs.route.outputs.command }}
-      pr_number: ${{ fromJSON(needs.route.outputs.pr_number || '0') }}
-      app_name:  ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
+      command:    ${{ needs.route.outputs.command }}
+      pr_number:  ${{ fromJSON(needs.route.outputs.pr_number || '0') }}
+      app_name:   ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
+      aicli_repo: '{{AICLI_REPO}}'
+      aicli_ref:  main
     secrets:
       AI_API_KEY: ${{ secrets.AI_CLI_API_KEY }}
       APP_TOKEN:  ${{ needs.get-token.outputs.app_token }}
