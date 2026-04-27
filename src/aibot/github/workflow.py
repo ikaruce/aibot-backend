@@ -8,6 +8,7 @@ import httpx
 
 from aibot.config import get_settings
 from aibot.github.auth import get_installation_token
+from aibot.github.secrets import upsert_repo_secret
 
 logger = logging.getLogger(__name__)
 
@@ -136,8 +137,15 @@ async def provision_repos(
     if token is None:
         token, _ = await get_installation_token(installation_id)
 
+    api_key = get_settings().api_key
     for repo in repos:
         full_name = repo["full_name"]
+        try:
+            await upsert_repo_secret(token, full_name, "AI_CLI_APP_TOKEN", api_key)
+        except Exception as exc:
+            # Missing `secrets: write` permission etc. — log and continue so the
+            # workflow PR is still opened; the user can set the secret manually.
+            logger.error("Failed to set AI_CLI_APP_TOKEN on %s: %s", full_name, exc)
         try:
             await create_dispatch_pr(token, full_name)
         except Exception as exc:

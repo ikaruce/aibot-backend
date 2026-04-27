@@ -15,7 +15,6 @@
 | 종류 | 이름 | 설명 |
 |------|------|------|
 | Secret | `AI_CLI_API_KEY` | AI 도구 API 키 (예: Gemini API 키) |
-| Secret | `AI_CLI_APP_TOKEN` | (미사용) 토큰은 {{APP_NAME}} 에서 직접 발급 |
 | Variable | `AI_CLI_APP_NAME` | 댓글에 표시할 앱 이름 (기본값: `{{APP_NAME}}`) |
 | Variable | `AI_CLI_SKILL` | PR 리뷰에 사용할 스킬 (기본값: `code-review-commons`) |
 | Variable | `AI_CLI_RULES` | 적용할 규칙 목록 (기본값: `code-inspection-common`) |
