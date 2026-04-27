@@ -1,0 +1,114 @@
+# .github/workflows/ai-cli-dispatch.yml
+#
+# Auto-installed by {{APP_NAME}} GitHub App.
+# This file is managed by the app — manual edits may be overwritten.
+#
+# What this workflow does:
+#   - On PR open/update → runs the configured AI skill as a code review
+#   - On comment containing @ai-cli → executes the user's free-form instruction
+#
+# Configuration (set in your repository settings):
+#   Secrets:
+#     AI_CLI_API_KEY   — API key for the AI tool (e.g., Gemini API key)
+#     AI_CLI_APP_TOKEN — GitHub App token (auto-managed by {{APP_NAME}})
+#   Variables (optional):
+#     AI_CLI_APP_NAME  — Display name in comments (default: '{{APP_NAME}}')
+#     AI_CLI_SKILL     — Predefined skill to use for PR review
+#                        (default: 'code-review-commons')
+#     AI_CLI_RULES     — Comma-separated rule names for PR review
+#                        (default: 'code-inspection-common')
+
+name: AI CLI Dispatch
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  # ── Determine routing from event context ───────────────────────────────────
+  route:
+    runs-on: ubuntu-latest
+    outputs:
+      route_type: ${{ steps.router.outputs.route_type }}
+      command:    ${{ steps.router.outputs.command }}
+      pr_number:  ${{ steps.router.outputs.pr_number }}
+    steps:
+      - name: Detect event type and extract routing info
+        id: router
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            const payload   = context.payload;
+
+            // Helper: write to GITHUB_OUTPUT
+            const out = (k, v) => core.setOutput(k, v);
+
+            if (eventName === 'pull_request') {
+              out('route_type', 'pr_event');
+              out('pr_number',  String(payload.pull_request.number));
+              return;
+            }
+
+            const commentBody = payload.comment?.body ?? '';
+            const mentionMatch = commentBody.match(/@ai-cli[\s,]+([\s\S]+)/);
+
+            if (eventName === 'issue_comment') {
+              // Only respond on PR comments, not plain issues
+              if (!payload.issue.pull_request) {
+                out('route_type', 'none');
+                return;
+              }
+              if (mentionMatch) {
+                out('route_type', 'mention');
+                out('command',    mentionMatch[1].trim());
+                out('pr_number',  String(payload.issue.number));
+              } else {
+                out('route_type', 'none');
+              }
+              return;
+            }
+
+            if (eventName === 'pull_request_review_comment') {
+              if (mentionMatch) {
+                out('route_type', 'mention');
+                out('command',    mentionMatch[1].trim());
+                out('pr_number',  String(payload.pull_request.number));
+              } else {
+                out('route_type', 'none');
+              }
+              return;
+            }
+
+            out('route_type', 'none');
+
+  # ── PR auto-review via skill ───────────────────────────────────────────────
+  pr-review:
+    needs: route
+    if: needs.route.outputs.route_type == 'pr_event'
+    uses: {{AICLI_REPO}}/.github/workflows/ai-skill-runner.yml@main
+    with:
+      skill_name: ${{ vars.AI_CLI_SKILL || 'code-review-commons' }}
+      rules:      ${{ vars.AI_CLI_RULES || 'code-inspection-common' }}
+      pr_number:  ${{ fromJSON(needs.route.outputs.pr_number) }}
+      app_name:   ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
+    secrets:
+      AI_API_KEY: ${{ secrets.AI_CLI_API_KEY }}
+      APP_TOKEN:  ${{ secrets.AI_CLI_APP_TOKEN }}
+
+  # ── @ai-cli mention handler ────────────────────────────────────────────────
+  ai-command:
+    needs: route
+    if: needs.route.outputs.route_type == 'mention'
+    uses: {{AICLI_REPO}}/.github/workflows/ai-command.yml@main
+    with:
+      command:   ${{ needs.route.outputs.command }}
+      pr_number: ${{ fromJSON(needs.route.outputs.pr_number || '0') }}
+      app_name:  ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
+    secrets:
+      AI_API_KEY: ${{ secrets.AI_CLI_API_KEY }}
+      APP_TOKEN:  ${{ secrets.AI_CLI_APP_TOKEN }}
