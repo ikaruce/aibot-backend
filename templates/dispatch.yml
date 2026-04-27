@@ -11,8 +11,7 @@
 #   Secrets:
 #     AI_CLI_API_KEY   — API key for the AI tool (e.g., Gemini API key)
 #     AI_CLI_APP_TOKEN — API key for the {{APP_NAME}} backend (static, never expires)
-#   Variables:
-#     AIBOT_URL        — {{APP_NAME}} backend URL (e.g., https://aibot.example.com)
+#   Variables (optional):
 #     AI_CLI_APP_NAME  — Display name in comments (default: '{{APP_NAME}}')
 #     AI_CLI_SKILL     — Predefined skill to use for PR review
 #                        (default: 'code-review-commons')
@@ -41,7 +40,7 @@ jobs:
       - name: Fetch installation token
         id: fetch
         env:
-          AIBOT_URL: ${{ vars.AIBOT_URL }}
+          AIBOT_URL: "{{AIBOT_URL}}"
           API_KEY:   ${{ secrets.AI_CLI_APP_TOKEN }}
         run: |
           RESPONSE=$(curl -sf -X POST "$AIBOT_URL/api/v1/token" \

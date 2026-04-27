@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     # GitHub API base (override for GHES)
     github_base_url: str = "https://github.com"
 
+    # Public URL of this server — baked into the dispatch workflow template
+    # so GitHub Actions knows where to call /api/v1/token
+    public_url: str
+
     # Static API key that GitHub Actions uses to call POST /api/v1/token
     api_key: str
 

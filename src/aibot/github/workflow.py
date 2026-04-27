@@ -23,6 +23,7 @@ def _render_dispatch() -> str:
         template
         .replace("{{APP_NAME}}", settings.app_name)
         .replace("{{AICLI_REPO}}", settings.aicli_repo)
+        .replace("{{AIBOT_URL}}", settings.public_url)
     )
 
 

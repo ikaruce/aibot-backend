@@ -14,6 +14,7 @@ FAKE_WEBHOOK_SECRET = "test-webhook-secret"
 FAKE_API_KEY = "test-api-key-abc123"
 FAKE_AICLI_REPO = "ikaruce/ai-cli-workflow"
 FAKE_APP_NAME = "aibot"
+FAKE_PUBLIC_URL = "https://aibot.example.com"
 
 # Minimal RSA private key for tests (generated with cryptography library, not used in production)
 FAKE_PRIVATE_KEY = (
@@ -83,6 +84,7 @@ def env_settings(monkeypatch):
     monkeypatch.setenv("GITHUB_PRIVATE_KEY", FAKE_PRIVATE_KEY)
     monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", FAKE_WEBHOOK_SECRET)
     monkeypatch.setenv("API_KEY", FAKE_API_KEY)
+    monkeypatch.setenv("PUBLIC_URL", FAKE_PUBLIC_URL)
     monkeypatch.setenv("AICLI_REPO", FAKE_AICLI_REPO)
     monkeypatch.setenv("APP_NAME", FAKE_APP_NAME)
 
