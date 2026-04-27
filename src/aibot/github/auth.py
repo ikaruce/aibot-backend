@@ -14,7 +14,7 @@ def generate_jwt() -> str:
     now = int(time.time())
     payload = {
         "iat": now - 60,   # issued 60 s in the past (clock skew tolerance)
-        "exp": now + 600,  # expires in 10 minutes (GitHub maximum)
+        "exp": now + 540,  # expires in 9 min — leaves headroom under GitHub's 10-min cap
         "iss": settings.github_app_id,
     }
     return jwt.encode(payload, settings.github_private_key, algorithm="RS256")
