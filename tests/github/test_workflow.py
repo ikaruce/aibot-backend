@@ -92,6 +92,10 @@ async def test_create_dispatch_pr_commits_rendered_template():
     assert "AIBOT_API_KEY: ${{ secrets.AI_CLI_APP_TOKEN }}" in committed
     # get-token job removed — reusable workflow fetches its own token.
     assert "get-token:" not in committed
+    # permissions block enables GITHUB_TOKEN fallback in the reusable workflow.
+    assert "permissions:" in committed
+    assert "pull-requests: write" in committed
+    assert "issues: write" in committed
 
 
 @pytest.mark.asyncio

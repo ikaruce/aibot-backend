@@ -31,6 +31,15 @@ on:
   pull_request_review_comment:
     types: [created]
 
+# GITHUB_TOKEN permissions — used as a fallback by the reusable workflow when
+# the {{APP_NAME}} backend cannot mint a fresh installation token. With these
+# scopes the workflow can still post review/issue comments, just under the
+# github-actions[bot] identity instead of the App.
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
 jobs:
   # ── Determine routing from event context ───────────────────────────────────
   route:
