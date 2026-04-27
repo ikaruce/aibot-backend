@@ -146,38 +146,24 @@ docker compose logs -f aibot
 
 ---
 
-### 6. Set Repository Secrets
+### 6. Set Repository Secrets and Variables
 
-After merging the PR, set these secrets on your test repository (**Settings → Secrets and variables → Actions**):
+After merging the PR, configure the following on your test repository.
+
+**Secrets** (**Settings → Secrets and variables → Actions → Secrets**):
 
 | Secret | Value |
 |--------|-------|
 | `AI_CLI_API_KEY` | Your Gemini API key (or other AI provider key) |
-| `AI_CLI_APP_TOKEN` | GitHub App installation token — see below |
+| `AI_CLI_APP_TOKEN` | The `API_KEY` value from your backend's `.env` |
 
-**Getting `AI_CLI_APP_TOKEN`:**
+**Variables** (**Settings → Secrets and variables → Actions → Variables**):
 
-Call the `/api/v1/token` endpoint with your backend's API key:
+| Variable | Value |
+|----------|-------|
+| `AIBOT_URL` | Your backend URL, e.g. `https://xxxx.ngrok-free.app` |
 
-```bash
-curl -X POST https://<your-server>/api/v1/token \
-  -H "Authorization: Bearer <API_KEY from .env>" \
-  -H "Content-Type: application/json" \
-  -d '{"repo": "owner/your-test-repo"}'
-```
-
-Response:
-
-```json
-{
-  "token": "ghs_xxxxxxxxxxxx",
-  "expires_at": "2026-01-01T12:00:00Z"
-}
-```
-
-Set the `token` value as the `AI_CLI_APP_TOKEN` secret.
-
-> **Note:** Installation tokens expire after 1 hour. For production, add a step at the start of the dispatch workflow that refreshes this token automatically by calling `/api/v1/token`.
+`AI_CLI_APP_TOKEN` is the **static API key for the aibot backend** — not a GitHub token. The dispatch workflow calls `/api/v1/token` at runtime to fetch a fresh GitHub installation token each time. The token never touches repository secrets.
 
 ---
 

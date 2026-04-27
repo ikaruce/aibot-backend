@@ -10,8 +10,9 @@
 # Configuration (set in your repository settings):
 #   Secrets:
 #     AI_CLI_API_KEY   — API key for the AI tool (e.g., Gemini API key)
-#     AI_CLI_APP_TOKEN — GitHub App token (auto-managed by {{APP_NAME}})
-#   Variables (optional):
+#     AI_CLI_APP_TOKEN — API key for the {{APP_NAME}} backend (static, never expires)
+#   Variables:
+#     AIBOT_URL        — {{APP_NAME}} backend URL (e.g., https://aibot.example.com)
 #     AI_CLI_APP_NAME  — Display name in comments (default: '{{APP_NAME}}')
 #     AI_CLI_SKILL     — Predefined skill to use for PR review
 #                        (default: 'code-review-commons')
@@ -29,6 +30,28 @@ on:
     types: [created]
 
 jobs:
+  # ── Fetch fresh GitHub App installation token ──────────────────────────────
+  #    AI_CLI_APP_TOKEN is the static API key for the aibot backend.
+  #    The backend issues a short-lived GitHub installation token on demand.
+  get-token:
+    runs-on: ubuntu-latest
+    outputs:
+      app_token: ${{ steps.fetch.outputs.token }}
+    steps:
+      - name: Fetch installation token
+        id: fetch
+        env:
+          AIBOT_URL: ${{ vars.AIBOT_URL }}
+          API_KEY:   ${{ secrets.AI_CLI_APP_TOKEN }}
+        run: |
+          RESPONSE=$(curl -sf -X POST "$AIBOT_URL/api/v1/token" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"repo\": \"$GITHUB_REPOSITORY\"}")
+          TOKEN=$(echo "$RESPONSE" | jq -r .token)
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
   # ── Determine routing from event context ───────────────────────────────────
   route:
     runs-on: ubuntu-latest
@@ -88,7 +111,7 @@ jobs:
 
   # ── PR auto-review via skill ───────────────────────────────────────────────
   pr-review:
-    needs: route
+    needs: [route, get-token]
     if: needs.route.outputs.route_type == 'pr_event'
     uses: {{AICLI_REPO}}/.github/workflows/ai-skill-runner.yml@main
     with:
@@ -98,11 +121,11 @@ jobs:
       app_name:   ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
     secrets:
       AI_API_KEY: ${{ secrets.AI_CLI_API_KEY }}
-      APP_TOKEN:  ${{ secrets.AI_CLI_APP_TOKEN }}
+      APP_TOKEN:  ${{ needs.get-token.outputs.app_token }}
 
   # ── @ai-cli mention handler ────────────────────────────────────────────────
   ai-command:
-    needs: route
+    needs: [route, get-token]
     if: needs.route.outputs.route_type == 'mention'
     uses: {{AICLI_REPO}}/.github/workflows/ai-command.yml@main
     with:
@@ -111,4 +134,4 @@ jobs:
       app_name:  ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
     secrets:
       AI_API_KEY: ${{ secrets.AI_CLI_API_KEY }}
-      APP_TOKEN:  ${{ secrets.AI_CLI_APP_TOKEN }}
+      APP_TOKEN:  ${{ needs.get-token.outputs.app_token }}
