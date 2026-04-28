@@ -48,6 +48,7 @@ jobs:
       route_type: ${{ steps.router.outputs.route_type }}
       command:    ${{ steps.router.outputs.command }}
       pr_number:  ${{ steps.router.outputs.pr_number }}
+      is_pr:      ${{ steps.router.outputs.is_pr }}
     steps:
       - name: Detect event type and extract routing info
         id: router
@@ -81,15 +82,14 @@ jobs:
             );
 
             if (eventName === 'issue_comment') {
-              if (!isPrComment) {
-                core.info('skip: issue_comment on a plain issue (not a PR)');
-                out('route_type', 'none');
-                return;
-              }
+              // Both PR and plain-issue comments are accepted. GitHub uses one
+              // numbering space for issues + PRs, so payload.issue.number is
+              // valid either way; downstream uses is_pr to branch.
               if (mentionMatch) {
                 out('route_type', 'mention');
                 out('command',    command);
                 out('pr_number',  String(payload.issue.number));
+                out('is_pr',      String(isPrComment));
               } else {
                 out('route_type', 'none');
               }
@@ -101,6 +101,7 @@ jobs:
                 out('route_type', 'mention');
                 out('command',    command);
                 out('pr_number',  String(payload.pull_request.number));
+                out('is_pr',      'true');
               } else {
                 out('route_type', 'none');
               }
@@ -135,6 +136,7 @@ jobs:
     with:
       command:    ${{ needs.route.outputs.command }}
       pr_number:  ${{ fromJSON(needs.route.outputs.pr_number || '0') }}
+      is_pr:      ${{ needs.route.outputs.is_pr == 'true' }}
       app_name:   ${{ vars.AI_CLI_APP_NAME || '{{APP_NAME}}' }}
       aicli_repo: '{{AICLI_REPO}}'
       aicli_ref:  main
