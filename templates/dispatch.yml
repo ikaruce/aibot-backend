@@ -72,11 +72,17 @@ jobs:
             // may be empty — a bare @ai-cli still routes as a mention).
             const mentionMatch = commentBody.match(/@ai-cli\b[\s,:]*([\s\S]*)/i);
             const command = mentionMatch ? mentionMatch[1].trim() : '';
-            core.info(`event=${eventName} mention=${!!mentionMatch} command="${command}"`);
+            const isPrComment = !!payload.issue?.pull_request;
+            const prNumber =
+              payload.pull_request?.number ?? payload.issue?.number;
+            core.info(
+              `event=${eventName} mention=${!!mentionMatch} ` +
+              `isPrComment=${isPrComment} prNumber=${prNumber} command="${command}"`
+            );
 
             if (eventName === 'issue_comment') {
-              // Only respond on PR comments, not plain issues
-              if (!payload.issue.pull_request) {
+              if (!isPrComment) {
+                core.info('skip: issue_comment on a plain issue (not a PR)');
                 out('route_type', 'none');
                 return;
               }
@@ -101,6 +107,7 @@ jobs:
               return;
             }
 
+            core.info(`skip: unhandled event ${eventName}`);
             out('route_type', 'none');
 
   # ── PR auto-review via skill ───────────────────────────────────────────────
