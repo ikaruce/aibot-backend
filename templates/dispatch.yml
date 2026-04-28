@@ -67,7 +67,12 @@ jobs:
             }
 
             const commentBody = payload.comment?.body ?? '';
-            const mentionMatch = commentBody.match(/@ai-cli[\s,]+([\s\S]+)/);
+            // Match @ai-cli (case-insensitive), then any combination of
+            // whitespace / comma / colon, then the rest as the command (which
+            // may be empty — a bare @ai-cli still routes as a mention).
+            const mentionMatch = commentBody.match(/@ai-cli\b[\s,:]*([\s\S]*)/i);
+            const command = mentionMatch ? mentionMatch[1].trim() : '';
+            core.info(`event=${eventName} mention=${!!mentionMatch} command="${command}"`);
 
             if (eventName === 'issue_comment') {
               // Only respond on PR comments, not plain issues
@@ -77,7 +82,7 @@ jobs:
               }
               if (mentionMatch) {
                 out('route_type', 'mention');
-                out('command',    mentionMatch[1].trim());
+                out('command',    command);
                 out('pr_number',  String(payload.issue.number));
               } else {
                 out('route_type', 'none');
@@ -88,7 +93,7 @@ jobs:
             if (eventName === 'pull_request_review_comment') {
               if (mentionMatch) {
                 out('route_type', 'mention');
-                out('command',    mentionMatch[1].trim());
+                out('command',    command);
                 out('pr_number',  String(payload.pull_request.number));
               } else {
                 out('route_type', 'none');
